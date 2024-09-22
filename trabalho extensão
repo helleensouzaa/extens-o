@@ -1,0 +1,110 @@
+{
+  "manifest_version": 3,
+  "name": "Assistente de Estudos",
+  "version": "1.0",
+  "description": "Uma extensão para ajudar estudantes a organizarem seus estudos",
+  "permissions": ["storage", "alarms", "activeTab"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Assistente de Estudos</title>
+    <style>
+      body {
+        width: 300px;
+        font-family: Arial, sans-serif;
+      }
+      .timer, .tasks, .notes {
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Assistente de Estudos</h1>
+    <div class="timer">
+      <h2>Pomodoro Timer</h2>
+      <button id="startTimer">Iniciar</button>
+      <p id="timeDisplay">25:00</p>
+    </div>
+    <div class="tasks">
+      <h2>Tarefas</h2>
+      <input type="text" id="newTask" placeholder="Adicionar tarefa" />
+      <ul id="taskList"></ul>
+    </div>
+    <div class="notes">
+      <h2>Anotações</h2>
+      <textarea id="notesArea" placeholder="Escreva suas anotações aqui"></textarea>
+    </div>
+  </body>
+  <script src="popup.js"></script>
+</html>
+// Pomodoro Timer
+let timer;
+const timeDisplay = document.getElementById('timeDisplay');
+let timeLeft = 1500; // 25 minutos em segundos
+
+document.getElementById('startTimer').addEventListener('click', () => {
+  if (!timer) {
+    timer = setInterval(() => {
+      if (timeLeft > 0) {
+        timeLeft--;
+        timeDisplay.textContent = formatTime(timeLeft);
+      } else {
+        clearInterval(timer);
+        timer = null;
+        alert('Sessão concluída!');
+      }
+    }, 1000);
+  }
+});
+
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+}
+
+// Tarefas
+const taskList = document.getElementById('taskList');
+const newTaskInput = document.getElementById('newTask');
+
+newTaskInput.addEventListener('keydown', function (event) {
+  if (event.key === 'Enter' && newTaskInput.value) {
+    const li = document.createElement('li');
+    li.textContent = newTaskInput.value;
+    taskList.appendChild(li);
+    newTaskInput.value = '';
+  }
+});
+
+// Notas
+const notesArea = document.getElementById('notesArea');
+notesArea.value = localStorage.getItem('notes') || '';
+
+notesArea.addEventListener('input', function () {
+  localStorage.setItem('notes', notesArea.value);
+});
+chrome.alarms.onAlarm.addListener(() => {
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: 'icons/icon48.png',
+    title: 'Hora de Estudar!',
+    message: 'Sua sessão de estudo acabou. Vamos para a próxima!'
+  });
+});
